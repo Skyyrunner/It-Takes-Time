@@ -1,0 +1,33 @@
+.Chapter {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    margin: 5vh 0;
+}
+
+.Chapter .paragraphs {
+    border-bottom: 1px solid #777;
+}
+
+.Chapter .chaptername {
+    font-family: "Times New Roman", serif;
+    font-size: 38px;
+    width: 100px;
+    border-bottom: 1px solid #777;
+    margin-bottom: 10px;
+}
+
+.Paragraph {
+    text-align: left;
+    margin: 10px 10px;
+    width: 100%;
+    max-width: 700px;
+    font-size: 18px;
+    line-height: 1.5;
+    font-family: "Open Sans", sans-serif;
+}
+
+.Paragraph .choice {
+  margin: 0px 0px;
+}
