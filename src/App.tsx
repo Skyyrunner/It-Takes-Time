@@ -1,6 +1,7 @@
 import * as React from 'react';
 import './App.css';
 import 'whatwg-fetch';
+import { mapGetOrDie } from './Utility';
 import { Chapter, ChapterProps, ChoiceConfig } from './Chapter';
 
 interface AppState {
@@ -55,14 +56,14 @@ class App extends React.Component<Object, AppState> {
           }
         }
         // done dealing with json, now update state
-        let chapter00 = map.get('00');
+        let chapter00 = mapGetOrDie<string, ChapterProps>('00', map);
+        let chapter01 = mapGetOrDie<string, ChapterProps>('01', map);
+        let numchapters = this.state.numchapters;
         let slots: (ChapterProps|null)[] = [];
-        if (chapter00) {
-          slots.push(chapter00);
-        } else {
-          throw new Error('Chapter 00 does not exist.');
-        }
-        let numchapters = this.state.numchapters + 1;
+        chapter00.key = numchapters++;
+        slots.push(chapter00);
+        chapter01.key = numchapters++;
+        slots.push(chapter01);
         this.setState(oldstate => ({chapterinfo: map, numchapters: numchapters, slots: slots}));
     });
   }
