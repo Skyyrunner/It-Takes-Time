@@ -2,28 +2,26 @@ import './fonts.css';
 import * as React from 'react';
 import './Chapter.css';
 
-interface ChapterProps {
-  path: string;
+export interface ChapterProps {
+  name: string; // the chapter title
+  content: string[]; // the actual text
+  choices: Map<string, ChoiceConfig>; // the choices template
+  slot: number; // which slot this chapter uses
+  uid: string; // this uid
+  next: string; // the next chapter uid
+  key: number;
 }
 
-type Choice = [string, boolean, string]|[string, boolean];
+export type Choice = [string, boolean, string]|[string, boolean];
 
-interface ChoiceConfig {
+export interface ChoiceConfig {
   header: string;
   choices: Choice[];
 }
 
-interface ChapterState {
-  path: string;
-  name: string|null;
-  content: string[];
-  choices: Map<string, ChoiceConfig>;
-  index: string|null;
-}
-
 interface ParagraphProps {
   content: string;
-  config: ChapterState;
+  config: ChapterProps;
 }
 
 function renderDangerously(content: string) {
@@ -60,42 +58,17 @@ function Paragraph(props: ParagraphProps) {
   );
 }
 
-export default class Chapter extends React.Component<ChapterProps, ChapterState> {
+export class Chapter extends React.Component<ChapterProps, Object> {
   constructor(props: ChapterProps) {
     super(props);
-    this.state = { path: props.path, name: null, content: [], index: null, choices: new Map() };
-  }
-
-  componentDidMount() {
-    fetch(this.props.path)
-      .then(response => response.json())
-      .then(json => this.setState(state => {
-        let o: ChapterState = {...state};
-        o.name = json.name;
-        o.index = json.index; 
-
-        let L = json.content.length;
-        for (let i = 0; i < L; i++) {
-          o.content.push(json.content[i]);
-        }        
-
-        let choices: Object = json.choices;     
-        for (let key in choices) {
-          if (choices.hasOwnProperty(key)) {
-            o.choices.set(key, json.choices[key]);
-          }
-        }
-        return o;
-      }));
   }
 
   render() {
-    console.log(this.state);
     return (
         <div className="Chapter">
-          <span className="chaptername">{this.state.name}</span>
+          <span className="chaptername">{this.props.name}</span>
           <div className="paragraphs">
-            {this.state.content.map((p, i) => (<Paragraph content={p} config={this.state} key={i}/>))}
+            {this.props.content.map((p, i) => (<Paragraph content={p} config={this.props} key={i}/>))}
           </div>
         </div>
     );
