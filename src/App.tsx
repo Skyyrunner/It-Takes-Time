@@ -4,21 +4,28 @@ import 'whatwg-fetch';
 import { mapGetOrDie } from './Utility';
 import { Chapter, ChapterProps, ChoiceConfig } from './Chapter';
 
+type scrollToComponentFunction = (ref: React.ReactInstance, options?: Object) => void;
+const scrollToComponent: scrollToComponentFunction = require('react-scroll-to-component');
+
 interface AppState {
   slots: (ChapterProps|null)[];
   chapters: Chapter[];
-  numchapters: number;
   chapterinfo: Map<string, ChapterProps>;
 }
 
 class App extends React.Component<Object, AppState> {
+  refFromUID: Map<string, React.ReactInstance>;
+
   constructor(props: Object) {
     super(props);
+    this.refFromUID = new Map<string, React.ReactInstance>();
     this.state = {slots: [],
       chapters: [],
-      chapterinfo: new Map<string, ChapterProps>(),
-      numchapters: 0
+      chapterinfo: new Map<string, ChapterProps>()
     };
+    // let call this from other classes
+    this.scrollToChapter = this.scrollToChapter.bind(this);
+    this.scrollToLoadedChapter = this.scrollToLoadedChapter.bind(this);
   }
 
   componentDidMount() {
@@ -37,7 +44,8 @@ class App extends React.Component<Object, AppState> {
               uid: data.uid,
               content: [],
               choices: new Map<string, ChoiceConfig>(),
-              key: -1
+              scrollto: this.scrollToChapter,
+              callOnLoad: null              
             };
     
             let L = data.content.length;
@@ -57,39 +65,75 @@ class App extends React.Component<Object, AppState> {
         }
         // done dealing with json, now update state
         let chapter00 = mapGetOrDie<string, ChapterProps>('00', map);
-        let chapter01 = mapGetOrDie<string, ChapterProps>('01', map);
-        let numchapters = this.state.numchapters;
+        // let chapter01 = mapGetOrDie<string, ChapterProps>('01', map);
         let slots: (ChapterProps|null)[] = [];
-        chapter00.key = numchapters++;
         slots.push(chapter00);
-        chapter01.key = numchapters++;
-        slots.push(chapter01);
-        this.setState(oldstate => ({chapterinfo: map, numchapters: numchapters, slots: slots}));
+        // slots.push(chapter01);
+        this.setState(oldstate => ({chapterinfo: map, slots: slots}));
     });
   }
 
-  setChapter(uid: string): Chapter {
-    let info = this.state.chapterinfo.get('00');
+  scrollToLoadedChapter(uid: string) {
+    let chapterobj = this.refFromUID.get(uid);
+    if (chapterobj) {
+      scrollToComponent(chapterobj, {align: 'top', duration: 500});
+    }
+  }
+
+  scrollToChapter(uid: string) {
+    if (this.refFromUID.get(uid) !== undefined) {
+      this.scrollToLoadedChapter(uid);
+    } else {
+      // Load uid and scroll to it.
+      this.setChapter(uid, true);
+    }
+  }
+
+  setChapter(uid: string, scrollOnLoad: boolean = false) {
+    let info = this.state.chapterinfo.get(uid);
     if (info !== undefined) {
-      let numchapters = this.state.numchapters;
+      if (scrollOnLoad) {
+        info.callOnLoad = this.scrollToLoadedChapter;
+      }
+
+      // Update state only if the existing one in the slot is incorrect
+      
       let slots = this.state.slots.slice();
       // check whether the slot exists.
-      if (info.slot < slots.length) {
+      if (slots.length <= info.slot) {
         while (slots.length < info.slot) {
           slots.push(null);
         }
-        info.key = numchapters++;
         slots.push(info);
+      } else {
+        let existingchapter = this.state.slots[info.slot];
+        if (existingchapter && existingchapter.uid === info.uid) {
+          return;
+        }
       }
-      this.setState(oldstate => ({numchapters: numchapters, slots: slots}));
+      this.setState(oldstate => ({slots: slots}));
+    } else {
+      throw new Error(`Chapter with uid ${uid} does not exist.`);
     }
-    throw new Error(`Chapter with uid ${uid} does not exist.`);
   }
 
   render() {
     return (
       <div className="App">
-        {this.state.slots.filter(d => d !== null).map((d: ChapterProps) => (<Chapter {...d} key={d.key}/>))}
+        {this.state.slots.filter(d => d !== null).map(
+          (d: ChapterProps) => (<Chapter
+            {...d}
+            key={d.uid}
+            ref={(ref) => {
+              if (ref !== null) {
+                this.refFromUID.set(d.uid, ref);
+                if (d.callOnLoad) {
+                  d.callOnLoad(d.uid);
+                }
+              }
+            }}
+          />)
+        )}
       </div>
     );
   }

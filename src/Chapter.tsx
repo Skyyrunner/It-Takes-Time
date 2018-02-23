@@ -2,6 +2,9 @@ import './fonts.css';
 import * as React from 'react';
 import './Chapter.css';
 
+type ScrollCallbackFunction = (uid: string) => void;
+type PlainCallbackFunction = () => void;
+
 export interface ChapterProps {
   name: string; // the chapter title
   content: string[]; // the actual text
@@ -9,7 +12,8 @@ export interface ChapterProps {
   slot: number; // which slot this chapter uses
   uid: string; // this uid
   next: string; // the next chapter uid
-  key: number;
+  scrollto: ScrollCallbackFunction; // the function from App to call to goto next chapter
+  callOnLoad: ScrollCallbackFunction|null; // the function to call after mounting self
 }
 
 export type Choice = [string, boolean, string]|[string, boolean];
@@ -22,6 +26,7 @@ export interface ChoiceConfig {
 interface ParagraphProps {
   content: string;
   config: ChapterProps;
+  callback: PlainCallbackFunction;
 }
 
 function renderDangerously(content: string) {
@@ -45,8 +50,17 @@ function Paragraph(props: ParagraphProps) {
         <p className="choiceHeader">{choiceinfo.header}</p>
         {choiceinfo.choices.map((arr, i) => {
           let className = arr[1] ? 'choice chosen' : 'choice';
+          let brackettext = arr[1] ? '[X]' : '[ ]';
+          let onClick = undefined;
+          if (arr[1] && (arr.length <= 2 || arr[2] !== 'nolink')) {
+            className += ' choicelink';
+            onClick = props.callback;
+          }
           return (
-            <p className={className} key={i}>{'[ ] ' + arr[0]}</p>
+            <p className={className} key={i} onClick={onClick}>
+              <span className="bracket">{brackettext}</span>
+              <span className="choicetext">{arr[0]}</span>
+            </p>
           );
         })}
       </div>
@@ -64,11 +78,15 @@ export class Chapter extends React.Component<ChapterProps, Object> {
   }
 
   render() {
+    let scrollto = this.props.scrollto;
+    let myprops = this.props;
     return (
         <div className="Chapter">
           <span className="chaptername">{this.props.name}</span>
           <div className="paragraphs">
-            {this.props.content.map((p, i) => (<Paragraph content={p} config={this.props} key={i}/>))}
+            {this.props.content.map((p, i) => (
+              <Paragraph content={p} config={this.props} callback={() => scrollto(myprops.next)} key={i}/>
+            ))}
           </div>
         </div>
     );

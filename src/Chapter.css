@@ -31,3 +31,24 @@
 .Paragraph .choice {
   margin: 0px 0px;
 }
+
+.Paragraph .chosen {
+  font-weight: bold;
+}
+
+.Paragraph .chosen .choicetext {
+  color: #333;
+}
+
+.Paragraph .choicelink {
+  cursor: pointer;
+}
+
+.Paragraph .choicelink .choicetext {
+  text-decoration: underline;
+}
+
+.Paragraph .bracket {
+  margin-right: 3px;
+  font-family: "Consolas", monospace;
+}
