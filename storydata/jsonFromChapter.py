@@ -19,6 +19,9 @@ for dirpath, dirname, filenames in os.walk("config"):
             "slot": config["slot"]
         }
 
+        if "also" in config:
+            obj["also"] = config["also"]
+
         with open("raw/" + config["input"], encoding="utf-8") as fin:
             for line in fin:
                 if line[-1] == "\n":

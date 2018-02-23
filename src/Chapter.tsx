@@ -2,7 +2,7 @@ import './fonts.css';
 import * as React from 'react';
 import './Chapter.css';
 
-type ScrollCallbackFunction = (uid: string) => void;
+type ScrollCallbackFunction = (uid: string, doscroll?: boolean) => void;
 type PlainCallbackFunction = () => void;
 
 export interface ChapterProps {
@@ -12,6 +12,7 @@ export interface ChapterProps {
   slot: number; // which slot this chapter uses
   uid: string; // this uid
   next: string; // the next chapter uid
+  also?: string; // The 
   scrollto: ScrollCallbackFunction; // the function from App to call to goto next chapter
   callOnLoad: ScrollCallbackFunction|null; // the function to call after mounting self
 }
@@ -85,7 +86,17 @@ export class Chapter extends React.Component<ChapterProps, Object> {
           <span className="chaptername">{this.props.name}</span>
           <div className="paragraphs">
             {this.props.content.map((p, i) => (
-              <Paragraph content={p} config={this.props} callback={() => scrollto(myprops.next)} key={i}/>
+              <Paragraph
+                content={p}
+                config={this.props}
+                key={i}
+                callback={() => {
+                  scrollto(myprops.next);
+                  if (myprops.also) {
+                    scrollto(myprops.also, false);
+                  }
+                }}
+              />
             ))}
           </div>
         </div>

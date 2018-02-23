@@ -45,8 +45,12 @@ class App extends React.Component<Object, AppState> {
               content: [],
               choices: new Map<string, ChoiceConfig>(),
               scrollto: this.scrollToChapter,
-              callOnLoad: null              
+              callOnLoad: null
             };
+
+            if (data.also) {
+              o.also = data.also;
+            }
     
             let L = data.content.length;
             for (let i = 0; i < L; i++) {
@@ -64,11 +68,10 @@ class App extends React.Component<Object, AppState> {
           }
         }
         // done dealing with json, now update state
-        let chapter00 = mapGetOrDie<string, ChapterProps>('00', map);
-        // let chapter01 = mapGetOrDie<string, ChapterProps>('01', map);
-        let slots: (ChapterProps|null)[] = [];
-        slots.push(chapter00);
-        // slots.push(chapter01);
+        let chapterstart = mapGetOrDie<string, ChapterProps>('00', map);
+        let chapterone = mapGetOrDie<string, ChapterProps>('01', map);
+        let initchapter = mapGetOrDie<string, ChapterProps>('13', map);
+        let slots: (ChapterProps|null)[] = [chapterstart, chapterone, initchapter];
         this.setState(oldstate => ({chapterinfo: map, slots: slots}));
     });
   }
@@ -80,38 +83,50 @@ class App extends React.Component<Object, AppState> {
     }
   }
 
-  scrollToChapter(uid: string) {
+  // dontscroll is if you want to setchapter from <Chapter/> using
+  // this callback, but not actually scroll to it.
+  scrollToChapter(uid: string, doscroll: boolean = true) {
     if (this.refFromUID.get(uid) !== undefined) {
-      this.scrollToLoadedChapter(uid);
+      if (doscroll) {
+        this.scrollToLoadedChapter(uid);
+      }
     } else {
-      // Load uid and scroll to it.
-      this.setChapter(uid, true);
+      // Load uid and possibly scroll to it
+      this.setChapter(uid, doscroll);
     }
   }
 
   setChapter(uid: string, scrollOnLoad: boolean = false) {
-    let info = this.state.chapterinfo.get(uid);
-    if (info !== undefined) {
+    var maybeinfo = this.state.chapterinfo.get(uid);
+    if (maybeinfo !== undefined) {
+      let info = maybeinfo;
+
       if (scrollOnLoad) {
         info.callOnLoad = this.scrollToLoadedChapter;
       }
 
       // Update state only if the existing one in the slot is incorrect
+      this.setState(oldstate => {
+        let newstate = {...oldstate};
+        let slots = newstate.slots;
+        // check whether the slot exists.
+        if (slots.length <= info.slot) {
+          while (slots.length < info.slot) {
+            slots.push(null);
+          }
+          slots.push(info);
+        } else {
+          let existingchapter = this.state.slots[info.slot];
+          if (existingchapter && existingchapter.uid === info.uid) {
+            return;
+          } else {
+            // otherwise, replace with new
+            this.state.slots[info.slot] = info;
+          }
+        }
+        return newstate;
+      });
       
-      let slots = this.state.slots.slice();
-      // check whether the slot exists.
-      if (slots.length <= info.slot) {
-        while (slots.length < info.slot) {
-          slots.push(null);
-        }
-        slots.push(info);
-      } else {
-        let existingchapter = this.state.slots[info.slot];
-        if (existingchapter && existingchapter.uid === info.uid) {
-          return;
-        }
-      }
-      this.setState(oldstate => ({slots: slots}));
     } else {
       throw new Error(`Chapter with uid ${uid} does not exist.`);
     }
